@@ -60,16 +60,20 @@ class MauticApi(object):
     def get_session(self):
         self.session = self.mautic.get_session((self.access_token, self.access_token_secret))
 
-    def create_lead(self, **kwargs):
-        self.endpoint = "leads/new"
-        status_code, lead = self.post(**kwargs)
+    def create_contact(self, **kwargs):
+        self.endpoint = "contacts/new"
+        status_code, contact = self.post(**kwargs)
         if status_code in [200, 201]:
-            return lead
+            return contact
         else:
             raise InvalidResponseCode("Lead not created.  Status Code: {0}".format(status_code))
 
-    def add_lead_to_campaign(self, campaign_id, lead_id):
-        self.endpoint = "campaigns/{0}/lead/add/{1}".format(campaign_id, lead_id)
+    def update_contact(self, contact_id):
+        self.endpoint = "contacts/{0}".format(contact_id)
+        status_code, response = self.post(**{})
+
+    def add_contact_to_campaign(self, campaign_id, contact_id):
+        self.endpoint = "campaigns/{0}/contact/add/{1}".format(campaign_id, contact_id)
         status_code, response = self.post(**{})
         
 
