@@ -60,23 +60,75 @@ class MauticApi(object):
     def get_session(self):
         self.session = self.mautic.get_session((self.access_token, self.access_token_secret))
 
+    def get_contact_id(self, sargs):
+        """
+        sargs:
+            Query Parameters:
+            search:  String or search command to filter entities by.
+            start:   Starting row for the entities returned. Defaults to 0.
+            limit:   Limit number of entities to return. Defaults to the system configuration for pagination (30).
+            orderBy: Column to sort by. Can use any column listed in the response.
+            orderByDir:  Sort direction: asc or desc.
+            publishedOnly:   Only return currently published entities.
+            minimal: Return only array of entities without additional lists in it.
+
+        rauth examples: https://github.com/litl/rauth/blob/master/tests/test_session.py
+
+        Search arguments (sargs):
+            Search Operators:
+            + (plus sign) - Search for the exact string (i.e. if admin, then administrator will not match)
+            ! (exclamation mark) - Not equals string
+            " " (double quotes) - Search by phrase
+            ( ) (parentheses) - Group expressions together.
+            OR - By default the expressions will be joined as AND statements. Use the OR operator to change that.
+
+            Search commands:
+            is:anonymous
+            is:unowned
+            is:mine
+            email:*
+            segment:{segment_alias}
+            name:*
+            company:*
+            owner:*
+            ip:*
+            common:{segment_alias} + {segment_alias} + ...
+
+        Example: sargs='search=email:vinicius@simbio.com.br OR company:simbio&limit=50'
+
+        Limitations: filter doesn't work on emails with '+' character.
+        """
+        self.endpoint = "contacts"
+        response = self.session.request('GET', self.base_url + self.endpoint, params=sargs)
+        if response.status_code == 200:
+            contacts = response.json()
+            if contacts['total'] != '0':
+                return contacts['contacts'][0]['id']
+            else:
+                return False
+        else:
+            return False
+
     def create_contact(self, **kwargs):
         self.endpoint = "contacts/new"
         status_code, contact = self.post(**kwargs)
-        if status_code in [200, 201]:
-            return contact
+        if status_code == 200:
+            return True
         else:
-            raise InvalidResponseCode("Lead not created.  Status Code: {0}".format(status_code))
+            raise InvalidResponseCode("Mautic: Contact not created.  Status Code: {0}".format(status_code))
 
-    def update_contact(self, contact_id):
-        self.endpoint = "contacts/{0}".format(contact_id)
-        status_code, response = self.post(**{})
+    def update_contact(self, cid, **kwargs):
+        self.endpoint = "contacts/{0}/edit".format(cid)
+        response = self.session.patch(self.base_url + self.endpoint, data=json.dumps(kwargs), headers={"Content-Type": "application/json"})
+        if response.status_code in [200, 201]:
+            return True
+        else:
+            raise InvalidResponseCode("Mautic: Error updating contact.  Status Code: {0}".format(status_code))
 
     def add_contact_to_campaign(self, campaign_id, contact_id):
         self.endpoint = "campaigns/{0}/contact/add/{1}".format(campaign_id, contact_id)
         status_code, response = self.post(**{})
         
-
     def post(self, **kwargs):
         resp = self.session.post(self.base_url + self.endpoint, data=json.dumps(kwargs), headers={"Content-Type": "application/json"})
         return resp.status_code, resp.json()
