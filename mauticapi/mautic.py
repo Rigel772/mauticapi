@@ -112,7 +112,7 @@ class MauticApi(object):
     def create_contact(self, **kwargs):
         self.endpoint = "contacts/new"
         status_code, contact = self.post(**kwargs)
-        if status_code == 200:
+        if status_code in [200, 201]:
             return True
         else:
             raise InvalidResponseCode("Mautic: Contact not created.  Status Code: {0}".format(status_code))
