@@ -103,7 +103,7 @@ class MauticApi(object):
         if response.status_code == 200:
             contacts = response.json()
             if contacts['total'] != '0':
-                return contacts['contacts'][0]['id']
+                return contacts['contacts'].keys()[0]
             else:
                 return False
         else:
